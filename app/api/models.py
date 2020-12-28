@@ -2,7 +2,7 @@ import string
 
 from django.db import models
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, pre_save, post_delete
 from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -221,6 +221,7 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     annotations_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    annotations_count = models.IntegerField(default=0)
 
     def __str__(self):
         return self.text[:50]
@@ -306,6 +307,19 @@ class RoleMapping(models.Model):
     class Meta:
         unique_together = ("user", "project", "role")
 
+@receiver(post_save, sender=DocumentAnnotation)
+def increase_annotations_count(sender, instance, **kwargs):
+    if len(DocumentAnnotation.objects.filter(document_id=instance.document_id, user_id=instance.user_id)) == 1:
+        document = Document.objects.filter(id=instance.document_id)[0]
+        document.annotations_count += 1
+        document.save()
+
+@receiver(post_delete, sender=DocumentAnnotation)
+def decrease_annotations_count(sender, instance, **kwargs):
+    if len(DocumentAnnotation.objects.filter(document_id=instance.document_id, user_id=instance.user_id)) == 0:
+        document = Document.objects.filter(id=instance.document_id)[0]
+        document.annotations_count -= 1
+        document.save()
 
 @receiver(post_save, sender=RoleMapping)
 def add_linked_project(sender, instance, created, **kwargs):

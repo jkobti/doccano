@@ -28,6 +28,8 @@ from .utils import CSVParser, ExcelParser, JSONParser, PlainTextParser, CoNLLPar
 from .utils import JSONLRenderer
 from .utils import JSONPainter, CSVPainter
 
+import time 
+
 IsInProjectReadOnlyOrAdmin = (IsAnnotatorAndReadOnly | IsAnnotationApproverAndReadOnly | IsProjectAdmin)
 IsInProjectOrAdmin = (IsAnnotator | IsAnnotationApprover | IsProjectAdmin)
 
@@ -116,8 +118,9 @@ class StatisticsAPI(APIView):
         user_data = self._get_user_completion_data(annotation_class, annotation_filter)
         if not project.collaborative_annotation:
             annotation_filter &= Q(user_id=self.request.user)
-        done = annotation_class.objects.filter(annotation_filter)\
-            .aggregate(Count('document', distinct=True))['document__count']
+        # done = annotation_class.objects.filter(annotation_filter)\
+        #     .aggregate(Count('document', distinct=True))['document__count']
+        done = Document.objects.filter(project_id=project.id).filter(annotations_number__gte=2).count()
         remaining = total - done
         return {'total': total, 'remaining': remaining, 'user': user_data}
 
@@ -172,9 +175,12 @@ class DocumentList(generics.ListCreateAPIView):
 
         queryset = project.documents
         if project.randomize_document_order:
-            random.seed(self.request.user.id)
+            # random.seed(self.request.user.id)
+            random.seed(time.time())
             value = random.randrange(2, 20)
-            queryset = queryset.annotate(sort_id=F('id') % value).order_by('sort_id', 'id')
+            # queryset = queryset.annotate(sort_id=F('id') % value).order_by
+            #('sort_id', 'id')
+            queryset  = queryset.annotate(sort_id=F('id') % value).filter(annotations_number__lte=3).order_by('annotations_number', 'sort_id')[0:20]
         else:
             queryset = queryset.order_by('id')
 
