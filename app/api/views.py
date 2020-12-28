@@ -120,7 +120,7 @@ class StatisticsAPI(APIView):
             annotation_filter &= Q(user_id=self.request.user)
         # done = annotation_class.objects.filter(annotation_filter)\
         #     .aggregate(Count('document', distinct=True))['document__count']
-        done = Document.objects.filter(project_id=project.id).filter(annotations_number__gte=2).count()
+        done = Document.objects.filter(project_id=project.id).filter(annotations_count__gte=2).count()
         remaining = total - done
         return {'total': total, 'remaining': remaining, 'user': user_data}
 
@@ -180,7 +180,7 @@ class DocumentList(generics.ListCreateAPIView):
             value = random.randrange(2, 20)
             # queryset = queryset.annotate(sort_id=F('id') % value).order_by
             #('sort_id', 'id')
-            queryset  = queryset.annotate(sort_id=F('id') % value).filter(annotations_number__lte=3).order_by('annotations_number', 'sort_id')[0:20]
+            queryset  = queryset.annotate(sort_id=F('id') % value).filter(annotations_count__lte=3).order_by('annotations_count', 'sort_id')[0:20]
         else:
             queryset = queryset.order_by('id')
 
