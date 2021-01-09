@@ -180,7 +180,7 @@ class DocumentList(generics.ListCreateAPIView):
             value = random.randrange(2, 20)
             # queryset = queryset.annotate(sort_id=F('id') % value).order_by
             #('sort_id', 'id')
-            queryset  = queryset.annotate(sort_id=F('id') % value).filter(annotations_count__lte=3).order_by('annotations_count', 'sort_id')[0:20]
+            queryset  = queryset.annotate(sort_id=F('id') % value).filter(annotations_count__lte=3).order_by('annotations_count', 'sort_id')[0:100]
         else:
             queryset = queryset.order_by('id')
 
